@@ -1,3 +1,6 @@
+[hidden] { 
+  display: none !important; 
+}
 :root{
   --bg1:#ffe6fa;
   --bg2:#d2f5ff;
@@ -256,3 +259,4 @@ button:disabled{opacity:.55; cursor:not-allowed; transform:none}
   .brand-img{max-height: 140px; max-width: 100%;}
   #gameWrap #canvas{height: 58vh; max-height: 60vh;}
 }
+
