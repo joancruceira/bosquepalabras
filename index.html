@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Nuvecielas — Bosque de las Palabras</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="topbar">
+      <div class="brand">
+        <img src="portada.png" alt="Nuvecielas" class="brand-img">
+      </div>
+
+      <div class="hud">
+        <div>Jugador: <strong id="playerNameHud">—</strong></div>
+        <div>Personaje: <strong id="charHud">—</strong></div>
+        <div>Palabras: <strong id="countHud">0</strong></div>
+        <div>Tiempo: <strong id="timeHud">30</strong>s</div>
+      </div>
+    </header>
+
+    <!-- MENU -->
+    <section class="card" id="menu">
+      <h1 class="title">Elegí tu nuveciela</h1>
+      <p class="subtitle">PC: flechas ← →. Móvil: arrastrá al personaje con el dedo.</p>
+
+      <div class="grid" id="charGrid"></div>
+
+      <div class="row">
+        <label class="label" for="playerName">Tu nombre:</label>
+        <input id="playerName" class="input" placeholder="Tu nombre" maxlength="18" />
+      </div>
+
+      <div class="row">
+        <button id="startBtn" class="primary" disabled>Empezar</button>
+        <button id="muteBtn" class="ghost" aria-pressed="false">Sonido: ON</button>
+        <button id="howBtn" class="ghost">Cómo se juega</button>
+      </div>
+
+      <div class="note" id="menuNote">Elegí un personaje y escribí tu nombre.</div>
+      <div class="note small">Archivos: portada.png, fondo.mp3, word.mp3, nuveciela.png, ciela.png, lunaria.png, nuve.png</div>
+    </section>
+
+    <!-- GAME -->
+    <section class="card game" id="gameWrap" hidden>
+      <canvas id="canvas" width="900" height="520"></canvas>
+
+      <div class="story">
+        <div class="story-head">
+          <div>
+            <div class="story-title">Tu cuento</div>
+            <div class="story-sub" id="promptLine">Atrapá palabras para armar frases.</div>
+            <div class="story-sub"><strong>Plantilla:</strong> <span id="templateLine">—</span></div>
+          </div>
+          <div class="story-actions">
+            <button id="undoBtn" class="ghost">Deshacer</button>
+            <button id="clearBtn" class="ghost">Limpiar</button>
+            <button id="copyBtn" class="primary">Copiar</button>
+            <button id="pdfBtn" class="ghost">PDF</button>
+          </div>
+        </div>
+
+        <div id="storyText" class="story-text" aria-live="polite"></div>
+      </div>
+
+      <div class="row">
+        <button id="backBtn" class="ghost">Volver al menú</button>
+      </div>
+
+      <!-- FIN DEL JUEGO -->
+      <div id="endOverlay" class="end" hidden>
+        <div class="end-card">
+          <div class="end-title">Fin del juego</div>
+          <div class="end-sub">Tu historia quedó así:</div>
+          <div id="endStory" class="end-story"></div>
+          <div class="end-actions">
+            <button id="endCopyBtn" class="primary">Copiar</button>
+            <button id="endPdfBtn" class="ghost">Exportar PDF</button>
+            <button id="againBtn" class="ghost">Jugar otra vez</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <dialog id="helpDialog" class="dialog">
+      <h2>Cómo se juega</h2>
+      <ul>
+        <li>Elegí personaje y escribí tu nombre.</li>
+        <li>Movete para atrapar palabras y armar frases con plantilla.</li>
+        <li>PC: flechas ← →. Móvil: arrastrá al personaje con el dedo.</li>
+        <li>Algunas palabras “importantes” brillan.</li>
+        <li>El juego dura 30 segundos.</li>
+      </ul>
+      <button id="closeHelp" class="primary">Ok</button>
+    </dialog>
+
+    <footer class="footer">Hecho con HTML/CSS/JS — Nuvecielas</footer>
+  </main>
+
+  <!-- jsPDF (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
