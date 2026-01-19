@@ -1,59 +1,68 @@
 (() => {
+  "use strict";
+
   // =========================
-  // DOM
+  // DOM (con defensivo)
   // =========================
-  const menu = document.getElementById("menu");
-  const gameWrap = document.getElementById("gameWrap");
-  const canvas = document.getElementById("canvas");
-  const ctx = canvas.getContext("2d", { alpha: true });
+  const $ = (id) => document.getElementById(id);
 
-  const charGrid = document.getElementById("charGrid");
-  const playerNameInput = document.getElementById("playerName");
-  const startBtn = document.getElementById("startBtn");
-  const backBtn = document.getElementById("backBtn");
-  const muteBtn = document.getElementById("muteBtn");
+  const menu = $("menu");
+  const gameWrap = $("gameWrap");
+  const canvas = $("canvas");
+  const ctx = canvas?.getContext("2d", { alpha: true });
 
-  const howBtn = document.getElementById("howBtn");
-  const helpDialog = document.getElementById("helpDialog");
-  const closeHelp = document.getElementById("closeHelp");
-  const menuNote = document.getElementById("menuNote");
+  const charGrid = $("charGrid");
+  const playerNameInput = $("playerName");
+  const startBtn = $("startBtn");
+  const backBtn = $("backBtn");
+  const muteBtn = $("muteBtn");
 
-  const playerNameHud = document.getElementById("playerNameHud");
-  const charHud = document.getElementById("charHud");
-  const countHud = document.getElementById("countHud");
-  const timeHud = document.getElementById("timeHud");
+  const howBtn = $("howBtn");
+  const helpDialog = $("helpDialog");
+  const closeHelp = $("closeHelp");
+  const menuNote = $("menuNote");
 
-  const storyText = document.getElementById("storyText");
-  const promptLine = document.getElementById("promptLine");
-  const templateLine = document.getElementById("templateLine");
+  const playerNameHud = $("playerNameHud");
+  const charHud = $("charHud");
+  const countHud = $("countHud");
+  const timeHud = $("timeHud");
 
-  const undoBtn = document.getElementById("undoBtn");
-  const clearBtn = document.getElementById("clearBtn");
-  const copyBtn = document.getElementById("copyBtn");
-  const pdfBtn = document.getElementById("pdfBtn");
+  const storyText = $("storyText");
+  const promptLine = $("promptLine");
+  const templateLine = $("templateLine");
 
-  const endOverlay = document.getElementById("endOverlay");
-  const endStory = document.getElementById("endStory");
-  const endCopyBtn = document.getElementById("endCopyBtn");
-  const endPdfBtn = document.getElementById("endPdfBtn");
-  const againBtn = document.getElementById("againBtn");
+  const undoBtn = $("undoBtn");
+  const clearBtn = $("clearBtn");
+  const copyBtn = $("copyBtn");
+  const pdfBtn = $("pdfBtn");
+
+  const endOverlay = $("endOverlay");
+  const endStory = $("endStory");
+  const endCopyBtn = $("endCopyBtn");
+  const endPdfBtn = $("endPdfBtn");
+  const againBtn = $("againBtn");
+
+  if (!canvas || !ctx) {
+    console.error("No se encontró #canvas o no se pudo crear el contexto 2D.");
+    return;
+  }
 
   // =========================
   // Helpers
   // =========================
   const rand = (min, max) => Math.random() * (max - min) + min;
   const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
-
-  function shuffle(arr) {
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  const shuffle = (arr) => {
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [arr[i], arr[j]] = [arr[j], arr[i]];
     }
     return arr;
-  }
+  };
 
   // =========================
-  // Canvas sizing (HiDPI)
+  // Logical size
   // =========================
   const W = 900;
   const H = 520;
@@ -74,7 +83,6 @@
   const music = new Audio("fondo.mp3");
   music.loop = true;
   music.volume = 0.35;
-
   const sfxWordSrc = "word.mp3";
   let muted = false;
 
@@ -82,16 +90,13 @@
     if (muted) return;
     if (music.paused) music.play().catch(() => {});
   }
-  function stopMusic() {
-    music.pause();
-    music.currentTime = 0;
-  }
+  function stopMusic() { music.pause(); music.currentTime = 0; }
   function pauseMusic() { music.pause(); }
 
   function playWordSfx() {
     if (muted) return;
     const s = new Audio(sfxWordSrc);
-    s.volume = 0.85;
+    s.volume = 0.9;
     s.play().catch(() => {});
   }
 
@@ -113,10 +118,10 @@
   }
 
   const characters = [
-    { id: "ciela",     label: "Ciela",     desc: "La sabia",      imageSrc: "ciela.png" },
-    { id: "nuve",      label: "Nuve",      desc: "La tranquila",  imageSrc: "nuve.png" },
-    { id: "nuveciela", label: "Nuveciela", desc: "La fuerte",     imageSrc: "nuveciela.png" },
-    { id: "lunaria",   label: "Lunaria",   desc: "La inventora",  imageSrc: "lunaria.png" },
+    { id:"ciela",     label:"Ciela",     desc:"La sabia",      imageSrc:"ciela.png" },
+    { id:"nuve",      label:"Nuve",      desc:"La tranquila",  imageSrc:"nuve.png" },
+    { id:"nuveciela", label:"Nuveciela", desc:"La fuerte",     imageSrc:"nuveciela.png" },
+    { id:"lunaria",   label:"Lunaria",   desc:"La inventora",  imageSrc:"lunaria.png" },
   ];
 
   const imageCache = new Map();
@@ -138,11 +143,10 @@
 
       const av = document.createElement("div");
       av.className = "avatar";
-
       const img = document.createElement("img");
       img.alt = c.label;
       img.src = c.imageSrc;
-      img.onerror = () => { img.remove(); av.textContent = c.label.slice(0, 1); };
+      img.onerror = () => { img.remove(); av.textContent = c.label.slice(0,1); };
       av.appendChild(img);
 
       const meta = document.createElement("div");
@@ -155,8 +159,8 @@
       btn.addEventListener("click", () => {
         selectedCharId = c.id;
         selectedCharMeta = c;
-        [...charGrid.querySelectorAll(".char")].forEach(x => x.setAttribute("aria-selected", "false"));
-        btn.setAttribute("aria-selected", "true");
+        [...charGrid.querySelectorAll(".char")].forEach(x => x.setAttribute("aria-selected","false"));
+        btn.setAttribute("aria-selected","true");
         validateStart();
       });
 
@@ -165,316 +169,339 @@
   }
 
   function validateStart() {
-    const nameOk = (playerNameInput?.value || "").trim().length >= 1;
+    const nameOk = ((playerNameInput?.value || "").trim().length >= 1);
     const charOk = !!selectedCharId;
-    startBtn.disabled = !(nameOk && charOk);
+    if (startBtn) startBtn.disabled = !(nameOk && charOk);
     if (menuNote) {
-      menuNote.textContent = startBtn.disabled
-        ? "Elegí un personaje y escribí tu nombre."
-        : "Listo. Tocá “Empezar”.";
+      menuNote.textContent = (nameOk && charOk)
+        ? "Listo. Tocá “Empezar”."
+        : "Elegí un personaje y escribí tu nombre.";
     }
   }
   playerNameInput?.addEventListener("input", validateStart);
 
   // =========================
-  // WORD BANKS (amplios)
+  // Banco de palabras (más grande + más coherente)
+  // En vez de “adjetivos” (problema de género), usamos “tono” (frases adverbiales).
   // =========================
+  const LABEL = {
+    sujeto: "Sujeto",
+    verbo: "Acción",
+    objeto: "Cosa",
+    lugar: "Lugar",
+    tono: "Tono"
+  };
+
   const WORDBANK = {
     ciela: {
-      prompt: "Ciela (la sabia): armá una historia con pistas y sentido.",
-      sujetos: [
-        "Ciela","una maestra","un libro","una brújula","una pregunta","un farol","un mapa","un consejo",
-        "una carta","un cuaderno","un reloj","una llave","un secreto","una biblioteca","una señal",
-        "una nota","un mensaje","una pista","un camino","un misterio"
+      prompt: "Arma tu historia en 30 segundos. Ciela te guía con ideas claras y pistas.",
+      sujeto: [
+        "Ciela", "una maestra", "una bibliotecaria", "un libro antiguo", "una pregunta", "un mapa", "un farol",
+        "una brújula", "un cuaderno", "una voz", "un mensaje", "una regla secreta", "un consejo", "una señal",
+        "una carta", "una llave", "un espejo", "una historia", "un silencio atento", "un reloj"
       ],
-      verbos: [
-        "descifra","ordena","explica","comprende","elige","recuerda","observa","encuentra",
-        "interpreta","conecta","aclara","resuelve","anota","pregunta","aprende","guía"
+      verbo: [
+        "explica", "ordena", "descifra", "observa", "elige", "recuerda", "anota", "conecta", "aclara", "resuelve",
+        "enseña", "compara", "descubre", "pregunta", "comprende", "señala", "revela", "traza", "lee", "guía"
       ],
-      cosas: [
-        "una idea","una pista escondida","una verdad","una palabra justa","un plan","una respuesta",
-        "un acertijo","un dibujo","un cuento","una promesa","un método","una lección","una señal"
+      objeto: [
+        "una pista", "una idea", "una verdad", "una regla", "una respuesta", "una dirección", "un plan",
+        "una palabra justa", "un secreto", "una solución", "un camino", "una señal brillante", "un mensaje corto",
+        "una nota", "una historia nueva", "un paso", "un dibujo", "una promesa", "una memoria", "un detalle"
       ],
-      lugares: [
-        "en la biblioteca","en el bosque","bajo la luna","junto al río","en un aula secreta","en un pasillo largo",
-        "entre árboles","cerca del mar","en una plaza tranquila","en un rincón","en la tarde"
+      lugar: [
+        "en la biblioteca", "en el bosque", "bajo la luna", "junto al río", "en un aula secreta",
+        "en la cima de una colina", "entre hojas doradas", "en un pasillo silencioso", "al pie de un árbol",
+        "detrás de una puerta", "en un claro", "sobre un puente", "en un rincón tibio", "en una plaza vacía"
       ],
-      adjetivos: [
-        "clara","sabia","precisa","profunda","paciente","atenta","serena","lúcida","justa","tranquila","firme"
+      tono: [
+        "con calma", "con paciencia", "con precisión", "sin apuro", "con ternura", "con atención",
+        "como si fuera un acertijo", "como si fuera un juego", "con un brillo en los ojos", "en voz bajita",
+        "sin perder el hilo", "mirando de cerca", "con cuidado", "paso a paso"
       ],
+      templates: [
+        ["sujeto","verbo","objeto","lugar","tono"],
+        ["lugar","sujeto","verbo","objeto","tono"],
+        ["sujeto","verbo","objeto","tono","lugar"]
+      ]
     },
 
     nuve: {
-      prompt: "Nuve (la tranquila): armá una historia suave y luminosa.",
-      sujetos: [
-        "Nuve","una nube","una brisa","un susurro","una estrella lenta","un abrazo","una pluma",
-        "una canción","una manta","un atardecer","una hoja","una luz","un sueño"
+      prompt: "Arma tu historia en 30 segundos. Nuve trae calma, luz y suavidad.",
+      sujeto: [
+        "Nuve", "una nube", "una brisa", "un susurro", "un abrazo", "una estrella lenta", "una manta",
+        "un té", "una canción", "una pluma", "una tarde", "un rayo suave", "un aroma", "una sonrisa",
+        "un viento", "una ola", "un jardín", "un silencio", "un cielo claro", "un sueño"
       ],
-      verbos: [
-        "flota","respira","acompaña","calma","espera","sonríe","escucha","sueña",
-        "cuida","pasea","descansa","brilla","susurra","abraza","se queda"
+      verbo: [
+        "flota", "respira", "acompaña", "calma", "espera", "escucha", "sonríe", "abraza", "protege", "suaviza",
+        "ilumina", "descansa", "susurra", "arrulla", "sigue", "se desliza", "se queda", "se acomoda", "late", "brilla"
       ],
-      cosas: [
-        "una paz","una melodía","una luz tibia","una promesa","un té","un refugio",
-        "un silencio","una risa","un latido","una caricia","una nube suave"
+      objeto: [
+        "una paz", "una luz tibia", "una promesa", "una melodía", "un momento", "un secreto bueno",
+        "una palabra suave", "un sueño corto", "una idea bonita", "un recuerdo", "una chispa", "una caricia",
+        "un refugio", "una risa", "un color", "una señal amable", "un camino", "una nube pequeñita"
       ],
-      lugares: [
-        "en la tarde","en el cielo","en un jardín","cerca del mar","bajo una manta","en una siesta",
-        "junto a la ventana","entre flores","en la lluvia suave","en un patio"
+      lugar: [
+        "en la tarde", "en el cielo", "en un jardín", "cerca del mar", "bajo una manta",
+        "en una siesta", "en una ventana", "entre nubes", "en una vereda", "sobre una colina",
+        "en una hamaca", "junto a una fogata", "en un patio", "en un balcón", "en un rincón de sol"
       ],
-      adjetivos: [
-        "suave","tranquila","lenta","cálida","amable","delicada","serena","ligera","tierna","tibia","dulce"
+      tono: [
+        "despacito", "con dulzura", "sin hacer ruido", "con una sonrisa", "con calma", "como una canción",
+        "como una brisa", "sin apuro", "con ternura", "casi en secreto", "con luz", "con cariño",
+        "respirando hondo", "dejando que pase"
       ],
+      templates: [
+        ["sujeto","verbo","objeto","lugar","tono"],
+        ["tono","sujeto","verbo","objeto","lugar"],
+        ["lugar","tono","sujeto","verbo","objeto"]
+      ]
     },
 
     nuveciela: {
-      prompt: "Nuveciela (la fuerte): armá una historia valiente y con decisión.",
-      sujetos: [
-        "Nuveciela","una guardiana","una tormenta","un escudo","una montaña","una amiga","un juramento",
-        "una linterna","un fuego","una puerta","una bandera","un camino","un desafío","un corazón"
+      prompt: "Arma tu historia en 30 segundos. Nuveciela es fuerza, decisión y corazón.",
+      sujeto: [
+        "Nuveciela", "una guardiana", "una tormenta", "una amiga leal", "un escudo", "una montaña",
+        "un juramento", "una chispa valiente", "una puerta pesada", "una voz firme", "un faro",
+        "un paso gigante", "un corazón", "una bandera", "una cuerda", "un trueno", "una llama",
+        "una promesa", "un puente", "una elección"
       ],
-      verbos: [
-        "protege","enfrenta","resiste","levanta","decide","defiende","avanza","salva",
-        "rompe","sostiene","aguanta","encuentra","empuja","abre","cruza"
+      verbo: [
+        "enfrenta", "protege", "resiste", "levanta", "decide", "defiende", "salta", "corre", "rompe", "abre",
+        "sostiene", "avanza", "se planta", "guarda", "salva", "empuja", "acompaña", "cambia", "grita", "abraza"
       ],
-      cosas: [
-        "una fuerza","una chispa","una llave","un mensaje","un objetivo","una prueba",
-        "una victoria","una promesa","un amuleto","una salida","una señal"
+      objeto: [
+        "un peligro", "una llave", "un mensaje", "un camino difícil", "una luz fuerte", "una idea clara",
+        "una salida", "una victoria", "una verdad", "un secreto", "un plan", "una señal", "un puente nuevo",
+        "una oportunidad", "una historia valiente", "un paso adelante", "una decisión"
       ],
-      lugares: [
-        "en la noche","en la cima","en el bosque","en un puente","bajo la lluvia","entre sombras",
-        "en el viento","en un pasaje","en una plaza vacía","en el borde del camino"
+      lugar: [
+        "en la noche", "bajo la lluvia", "en el bosque", "en la cima", "sobre un puente",
+        "en una plaza vacía", "en una puerta vieja", "entre sombras", "en un camino de piedras",
+        "junto a un faro", "en un pasillo oscuro", "en una escalera", "frente a un espejo"
       ],
-      adjetivos: [
-        "valiente","firme","decidida","leal","poderosa","audaz","imparable","noble","segura","intensa"
+      tono: [
+        "con valentía", "sin dudar", "con el corazón firme", "a toda velocidad", "con fuerza",
+        "como un trueno", "sin mirar atrás", "con una risa enorme", "con decisión", "sin miedo",
+        "con una chispa", "con cuidado pero firme", "mirando al frente"
       ],
+      templates: [
+        ["sujeto","verbo","objeto","lugar","tono"],
+        ["tono","sujeto","verbo","objeto","lugar"],
+        ["sujeto","verbo","lugar","objeto","tono"]
+      ]
     },
 
     lunaria: {
-      prompt: "Lunaria (la inventora): armá una historia rara y creativa.",
-      sujetos: [
-        "Lunaria","un robot","un engranaje","una antena","un telescopio","una máquina","un rayo",
-        "un circuito","un botón","un plano","un imán","un dron","una chispa","un motor"
+      prompt: "Arma tu historia en 30 segundos. Lunaria inventa cosas raras y geniales.",
+      sujeto: [
+        "Lunaria", "un robot", "un engranaje", "una antena", "un telescopio", "una máquina",
+        "un rayo", "un dron", "un chip", "una palanca", "un imán", "un botón misterioso",
+        "una lámpara", "un cable", "una rueda", "un plano", "un motor", "un casco", "una alarma", "un láser"
       ],
-      verbos: [
-        "inventa","construye","mezcla","prueba","enciende","calibra","transforma","programa",
-        "ajusta","conecta","repara","reinicia","descubre","ensambla","experimenta"
+      verbo: [
+        "inventa", "construye", "mezcla", "prueba", "enciende", "calibra", "programa", "transforma", "ajusta", "conecta",
+        "desarma", "arma", "tunea", "repara", "suelta", "activa", "descarga", "cambia", "explora", "experimenta"
       ],
-      cosas: [
-        "un prototipo","una fórmula","un truco","un mapa estelar","una pieza nueva","un código",
-        "una idea brillante","un mecanismo","un plan extraño","una señal eléctrica","un botón secreto"
+      objeto: [
+        "un prototipo", "una fórmula", "un truco", "un mapa holográfico", "una chispa azul",
+        "un plan secreto", "un mensaje codificado", "una idea imposible", "una llave magnética",
+        "un motor pequeño", "un casco brillante", "una nube eléctrica", "un cristal", "una pantalla",
+        "un interruptor", "una brújula rara", "un portal", "un dron curioso", "un invento nuevo"
       ],
-      lugares: [
-        "en el taller","en un laboratorio","en la luna","entre cables","bajo una lámpara","en un garaje secreto",
-        "en una mesa llena","en una sala","en un hangar","en el cielo"
+      lugar: [
+        "en el taller", "en un laboratorio", "en la luna", "en un garaje secreto", "en una cueva eléctrica",
+        "en una mesa llena de tornillos", "bajo una luz violeta", "entre cables", "en una sala de pruebas",
+        "en un pasillo futurista", "en una torre", "dentro de una caja", "sobre una mesa", "en una azotea"
       ],
-      adjetivos: [
-        "curiosa","eléctrica","nueva","extraña","brillante","imposible","genial","rara","futurista","magnética"
+      tono: [
+        "con curiosidad", "como una científica", "con una risa rara", "a toda velocidad", "con brillo en los ojos",
+        "sin parar", "con cuidado", "probando otra vez", "como si fuera magia", "con un click", "con paciencia",
+        "con un zumbido", "con una idea loca"
       ],
+      templates: [
+        ["sujeto","verbo","objeto","lugar","tono"],
+        ["lugar","sujeto","verbo","objeto","tono"],
+        ["tono","sujeto","verbo","lugar","objeto"]
+      ]
     }
   };
 
   // =========================
-  // Template + sentence builder (coherencia)
+  // Template / coherencia
   // =========================
-  const TEMPLATE = ["sujeto", "verbo", "cosa", "lugar", "adj"];
-  const TEMPLATE_LABEL = {
-    sujeto: "Sujeto",
-    verbo: "Verbo",
-    cosa: "Cosa",
-    lugar: "Lugar",
-    adj: "Adjetivo"
-  };
+  function pickTemplate(charId) {
+    const tpls = WORDBANK[charId].templates;
+    return pick(tpls);
+  }
+
+  let TEMPLATE = ["sujeto","verbo","objeto","lugar","tono"];
+  function expectedKind() { return TEMPLATE[templateIndex]; }
 
   function templateText() {
-    const idx = slotIndex;
-    return TEMPLATE.map((k, i) => (i === idx ? `→ ${TEMPLATE_LABEL[k]}` : TEMPLATE_LABEL[k])).join("  •  ");
-  }
-
-  function expectedKind() {
-    return TEMPLATE[slotIndex] || "sujeto";
-  }
-
-  function cap(s) {
-    if (!s) return s;
-    return s.charAt(0).toUpperCase() + s.slice(1);
-  }
-
-  function buildSentence(charId, slots) {
-    const S = slots.sujeto || "Alguien";
-    const V = slots.verbo || "hace";
-    const C = slots.cosa || "algo";
-    const L = slots.lugar || "en algún lugar";
-    const A = slots.adj || "mágico";
-
-    // Formatos simples, consistentes y legibles
-    if (charId === "ciela") {
-      return `${cap(S)} ${V} ${C} ${L}, y todo se vuelve ${A}.`;
-    }
-    if (charId === "nuve") {
-      return `${cap(S)} ${V} ${C} ${L}, muy ${A}.`;
-    }
-    if (charId === "nuveciela") {
-      return `${cap(S)} ${V} ${C} ${L}, y sigue ${A}.`;
-    }
-    // lunaria
-    return `${cap(S)} ${V} ${C} ${L}, algo ${A}.`;
+    const parts = TEMPLATE.map((k, i) => (i === templateIndex ? `→ ${LABEL[k]}` : LABEL[k]));
+    return parts.join("  •  ");
   }
 
   // =========================
-  // Bag system (sin cuelgues)
+  // Anti-repetición (bolsas + recientes)
   // =========================
-  let poolByKind = null;
-  let bagByKind = null;
-  let recentGlobal = [];
+  const RECENT_LIMIT = 10;
+  let recentTexts = [];
 
-  const RECENT_BLOCK = 7; // evita repetir muy seguido
+  function pushRecent(t) {
+    recentTexts.push(t);
+    if (recentTexts.length > RECENT_LIMIT) recentTexts.shift();
+  }
+  function isRecent(t) {
+    return recentTexts.includes(t);
+  }
 
-  function buildPoolsForChar(charId) {
+  let bags = null;
+
+  function rebuildBags(charId) {
     const b = WORDBANK[charId];
-    poolByKind = {
-      sujeto: b.sujetos.map(t => ({ t, kind: "sujeto" })),
-      verbo:  b.verbos.map(t => ({ t, kind: "verbo" })),
-      cosa:   b.cosas.map(t => ({ t, kind: "cosa" })),
-      lugar:  b.lugares.map(t => ({ t, kind: "lugar" })),
-      adj:    b.adjetivos.map(t => ({ t, kind: "adj" })),
+    bags = {
+      sujeto: shuffle([...b.sujeto]),
+      verbo: shuffle([...b.verbo]),
+      objeto: shuffle([...b.objeto]),
+      lugar: shuffle([...b.lugar]),
+      tono: shuffle([...b.tono]),
     };
-    bagByKind = { sujeto: [], verbo: [], cosa: [], lugar: [], adj: [] };
-    refillBag("sujeto"); refillBag("verbo"); refillBag("cosa"); refillBag("lugar"); refillBag("adj");
-    recentGlobal = [];
-  }
-
-  function refillBag(kind) {
-    const src = poolByKind?.[kind] ? poolByKind[kind].slice() : [];
-    bagByKind[kind] = shuffle(src);
   }
 
   function takeFromBag(kind) {
-    if (!bagByKind || !poolByKind) return null;
-    if (!bagByKind[kind] || bagByKind[kind].length === 0) refillBag(kind);
+    if (!bags || !bags[kind]) return null;
 
-    // intentos finitos para evitar repetición global
-    for (let tries = 0; tries < 10; tries++) {
-      if (bagByKind[kind].length === 0) refillBag(kind);
-      const item = bagByKind[kind].pop();
-      if (!item) return null;
-
-      if (!recentGlobal.includes(item.t)) return item;
-
-      // si estaba repetida, la devolvemos al inicio y seguimos probando
-      bagByKind[kind].unshift(item);
+    // si se vació, reconstruimos SOLO ese kind remezclado
+    if (bags[kind].length === 0) {
+      bags[kind] = shuffle([...WORDBANK[selectedCharId][kind]]);
     }
 
-    // si no pudo evitarse, devolvemos cualquiera
-    if (bagByKind[kind].length === 0) refillBag(kind);
-    return bagByKind[kind].pop() || null;
-  }
+    // buscamos algo que no sea “reciente” (hasta N intentos)
+    for (let tries = 0; tries < 8; tries++) {
+      if (bags[kind].length === 0) break;
+      const t = bags[kind].pop();
+      if (!isRecent(t)) return t;
+    }
 
-  function rememberGlobal(text) {
-    recentGlobal.push(text);
-    if (recentGlobal.length > RECENT_BLOCK) recentGlobal.shift();
+    // si todo era reciente, devolvemos igual (para no bloquear spawns)
+    return bags[kind].pop() || null;
   }
 
   // =========================
-  // Story state (slots)
+  // Story (frases completas)
   // =========================
-  let sentences = []; // array de strings
-  let slots = { sujeto: null, verbo: null, cosa: null, lugar: null, adj: null };
-  let slotIndex = 0;
+  let storySentences = [];
+  let currentSentence = [];
+  let templateIndex = 0;
   let caughtCount = 0;
 
-  function resetSlots() {
-    slots = { sujeto: null, verbo: null, cosa: null, lugar: null, adj: null };
-    slotIndex = 0;
+  function flushSentenceIfComplete() {
+    if (templateIndex >= TEMPLATE.length) {
+      const s = currentSentence.join(" ").trim();
+      if (s) storySentences.push(s);
+      currentSentence = [];
+      templateIndex = 0;
+
+      // variación: cambiar plantilla al cerrar frase
+      TEMPLATE = pickTemplate(selectedCharId);
+      if (templateLine) templateLine.textContent = templateText();
+    }
   }
 
-  function setSlot(kind, text) {
-    slots[kind] = text;
-  }
+  function addWordToStory(text) {
+    if (!text) return;
 
-  function pushSentenceIfComplete() {
-    const done = TEMPLATE.every(k => !!slots[k]);
-    if (!done) return;
-
-    const s = buildSentence(selectedCharId, slots);
-    sentences.push(s);
-    resetSlots();
-  }
-
-  function storyString() {
-    // muestra lo terminado + lo que va en construcción
-    const done = sentences.slice();
-
-    const partialParts = [];
-    for (let i = 0; i < TEMPLATE.length; i++) {
-      const k = TEMPLATE[i];
-      if (slots[k]) partialParts.push(slots[k]);
+    // Capitalizar si es inicio de frase
+    if (currentSentence.length === 0) {
+      currentSentence.push(text.charAt(0).toUpperCase() + text.slice(1));
+    } else {
+      currentSentence.push(text);
     }
 
-    if (partialParts.length) {
-      // preview coherente (sin punto final)
-      const preview = partialParts.join(" ");
-      done.push(cap(preview) + "…");
-    }
+    caughtCount += 1;
+    templateIndex += 1;
 
-    return done.join(" ");
+    pushRecent(text);
+    flushSentenceIfComplete();
+    refreshStoryText();
+  }
+
+  function getStoryString() {
+    const lines = [...storySentences];
+    if (currentSentence.length) lines.push(currentSentence.join(" ").trim());
+
+    return lines
+      .filter(Boolean)
+      .map(s => /[.!?]$/.test(s) ? s : (s + "."))
+      .join(" ");
   }
 
   function refreshStoryText() {
-    const t = storyString().trim();
-    storyText.textContent = t.length ? t : "Mové tu personaje para atrapar palabras…";
-    endStory.textContent = sentences.length ? sentences.join(" ") : "Todavía no atrapaste palabras.";
-    countHud.textContent = String(caughtCount);
-    templateLine.textContent = templateText();
+    const t = getStoryString().trim();
+    if (storyText) storyText.textContent = t.length ? t : "Mové tu personaje para atrapar palabras…";
+    if (endStory) endStory.textContent = t.length ? t : "Todavía no atrapaste palabras.";
+    if (countHud) countHud.textContent = String(caughtCount);
+    if (templateLine) templateLine.textContent = templateText();
   }
 
   function undoWord() {
-    // retrocede un slot dentro de la frase actual; si no hay, quita una oración completa
-    for (let i = TEMPLATE.length - 1; i >= 0; i--) {
-      const k = TEMPLATE[i];
-      if (slots[k]) {
-        slots[k] = null;
-        slotIndex = Math.max(0, i);
+    if (currentSentence.length > 0) {
+      const removed = currentSentence.pop();
+      // retrocede templateIndex con cuidado
+      templateIndex = Math.max(0, templateIndex - 1);
+      if (removed) {
         caughtCount = Math.max(0, caughtCount - 1);
-        refreshStoryText();
-        return;
+      }
+    } else if (storySentences.length > 0) {
+      const last = storySentences.pop().replace(/[.!?]$/,"");
+      const parts = last.split(" ").filter(Boolean);
+      currentSentence = parts;
+      templateIndex = clamp(currentSentence.length, 0, TEMPLATE.length);
+      if (currentSentence.length > 0) {
+        currentSentence.pop();
+        templateIndex = Math.max(0, templateIndex - 1);
+        caughtCount = Math.max(0, caughtCount - 1);
       }
     }
-
-    // si no había slots, borrar una oración ya cerrada
-    if (sentences.length > 0) {
-      sentences.pop();
-      refreshStoryText();
-    }
+    refreshStoryText();
   }
 
   function clearStory() {
-    sentences = [];
-    resetSlots();
+    storySentences = [];
+    currentSentence = [];
+    templateIndex = 0;
     caughtCount = 0;
+    recentTexts = [];
     refreshStoryText();
   }
 
   async function copyStory() {
-    const finalText = (sentences.join(" ") || "").trim();
-    if (!finalText) return;
+    const t = getStoryString().trim();
+    if (!t) return;
     try {
-      await navigator.clipboard.writeText(finalText);
-      copyBtn.textContent = "Copiado";
-      setTimeout(() => (copyBtn.textContent = "Copiar"), 900);
+      await navigator.clipboard.writeText(t);
+      if (copyBtn) {
+        copyBtn.textContent = "Copiado";
+        setTimeout(() => (copyBtn.textContent = "Copiar"), 900);
+      }
     } catch {
-      copyBtn.textContent = "Listo";
-      setTimeout(() => (copyBtn.textContent = "Copiar"), 900);
+      if (copyBtn) {
+        copyBtn.textContent = "Listo";
+        setTimeout(() => (copyBtn.textContent = "Copiar"), 900);
+      }
     }
   }
 
   async function exportPdf() {
-    const story = (sentences.join(" ") || "").trim();
+    const story = getStoryString().trim();
     if (!story) return;
 
     const jspdf = (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : null;
     if (!jspdf) {
-      alert("No se cargó jsPDF. Verificá que estés online y que el script CDN esté en el HTML.");
+      alert("No se cargó jsPDF. Verificá que el script CDN esté en el HTML.");
       return;
     }
 
@@ -489,27 +516,31 @@
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(12);
-    doc.text(`Jugador: ${playerName || "—"}   |   Personaje: ${selectedCharMeta?.label || "—"}`, margin, y);
+    doc.text(`Jugador: ${playerName || "—"}   |   Personaje: ${selectedCharMeta?.label || "—"} — ${selectedCharMeta?.desc || ""}`, margin, y);
     y += 18;
 
     const img = imageCache.get(selectedCharId);
     const ready = img && img.complete && img.naturalWidth > 0;
+
     if (ready) {
       const oc = document.createElement("canvas");
       const s = 260;
       oc.width = s; oc.height = s;
       const octx = oc.getContext("2d");
+
       octx.save();
       octx.beginPath();
       octx.arc(s/2, s/2, s/2, 0, Math.PI*2);
       octx.clip();
+
       const scale = Math.max(s / img.naturalWidth, s / img.naturalHeight);
       const dw = img.naturalWidth * scale;
       const dh = img.naturalHeight * scale;
       octx.drawImage(img, s/2 - dw/2, s/2 - dh/2, dw, dh);
       octx.restore();
 
-      doc.addImage(oc.toDataURL("image/png"), "PNG", 360, margin, 180, 180);
+      const dataUrl = oc.toDataURL("image/png");
+      doc.addImage(dataUrl, "PNG", 360, margin, 180, 180);
     }
 
     y += 14;
@@ -520,7 +551,9 @@
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(12);
-    const lines = doc.splitTextToSize(story, 500);
+
+    const maxWidth = 500;
+    const lines = doc.splitTextToSize(story, maxWidth);
     doc.text(lines, margin, y);
 
     doc.save("nuvecielas-historia.pdf");
@@ -529,7 +562,7 @@
   // =========================
   // Player movement + jump
   // =========================
-  const keys = { left: false, right: false };
+  const keys = { left:false, right:false };
 
   const player = {
     x: W * 0.5,
@@ -564,24 +597,23 @@
     const ready = img && img.complete && img.naturalWidth > 0;
 
     // sombra
-    ctx.globalAlpha = 0.16;
+    ctx.globalAlpha = 0.18;
     ctx.fillStyle = "#111827";
     ctx.beginPath();
-    ctx.ellipse(player.x, player.baseY + player.r + 16, player.r * 1.05, player.r * 0.42, 0, 0, Math.PI * 2);
+    ctx.ellipse(player.x, player.baseY + player.r + 16, player.r * 1.08, player.r * 0.44, 0, 0, Math.PI*2);
     ctx.fill();
     ctx.globalAlpha = 1;
 
     // halo
-    const pulse = 1 + Math.sin(ts / 520) * 0.03;
-    ctx.fillStyle = "rgba(124,58,237,.14)";
+    const pulse = 1 + Math.sin(ts / 520) * 0.035;
+    ctx.fillStyle = "rgba(255, 90, 180, .16)";
     ctx.beginPath();
-    ctx.arc(player.x, player.y, (player.r + 9) * pulse, 0, Math.PI * 2);
+    ctx.arc(player.x, player.y, (player.r + 10) * pulse, 0, Math.PI*2);
     ctx.fill();
 
-    // recorte circular
     ctx.save();
     ctx.beginPath();
-    ctx.arc(player.x, player.y, player.r, 0, Math.PI * 2);
+    ctx.arc(player.x, player.y, player.r, 0, Math.PI*2);
     ctx.clip();
 
     if (ready) {
@@ -591,36 +623,34 @@
       const scale = Math.max(size / iw, size / ih);
       const dw = iw * scale;
       const dh = ih * scale;
-      ctx.drawImage(img, player.x - dw / 2, player.y - dh / 2, dw, dh);
+      ctx.drawImage(img, player.x - dw/2, player.y - dh/2, dw, dh);
     } else {
-      ctx.fillStyle = "rgba(255,255,255,.92)";
-      ctx.fillRect(player.x - player.r, player.y - player.r, player.r * 2, player.r * 2);
+      ctx.fillStyle = "rgba(255,255,255,.95)";
+      ctx.fillRect(player.x-player.r, player.y-player.r, player.r*2, player.r*2);
     }
     ctx.restore();
 
-    ctx.strokeStyle = "rgba(0,0,0,.10)";
+    ctx.strokeStyle = "rgba(0,0,0,.12)";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(player.x, player.y, player.r, 0, Math.PI * 2);
+    ctx.arc(player.x, player.y, player.r, 0, Math.PI*2);
     ctx.stroke();
   }
 
-  // pointer drag
   function canvasPoint(evt) {
     const rect = canvas.getBoundingClientRect();
     const x = (evt.clientX - rect.left) * (W / rect.width);
     const y = (evt.clientY - rect.top) * (H / rect.height);
     return { x, y };
   }
-
   function hitPlayer(px, py) {
     const dx = px - player.x;
     const dy = py - player.y;
-    return (dx * dx + dy * dy) <= (player.r * player.r);
+    return (dx*dx + dy*dy) <= (player.r * player.r);
   }
 
   canvas.addEventListener("pointerdown", (evt) => {
-    if (gameWrap.hidden || !running) return;
+    if (gameWrap?.hidden || !running) return;
     const p = canvasPoint(evt);
     canvas.setPointerCapture(evt.pointerId);
     if (hitPlayer(p.x, p.y)) {
@@ -628,14 +658,12 @@
       player.dragOffsetX = p.x - player.x;
     }
   });
-
   canvas.addEventListener("pointermove", (evt) => {
     if (!player.dragging || !running) return;
     const p = canvasPoint(evt);
     player.x = p.x - player.dragOffsetX;
     player.x = clamp(player.x, player.r + 10, W - player.r - 10);
   });
-
   canvas.addEventListener("pointerup", () => { player.dragging = false; });
   canvas.addEventListener("pointercancel", () => { player.dragging = false; });
 
@@ -649,114 +677,101 @@
   });
 
   // =========================
-  // Words falling (spawn coherente)
+  // Words falling (más variedad + menos repetición)
   // =========================
   function roundRect(c, x, y, w, h, r, fill, stroke) {
-    const rr = Math.min(r, w / 2, h / 2);
+    const rr = Math.min(r, w/2, h/2);
     c.beginPath();
-    c.moveTo(x + rr, y);
-    c.arcTo(x + w, y, x + w, y + h, rr);
-    c.arcTo(x + w, y + h, x, y + h, rr);
-    c.arcTo(x, y + h, x, y, rr);
-    c.arcTo(x, y, x + w, y, rr);
+    c.moveTo(x+rr, y);
+    c.arcTo(x+w, y, x+w, y+h, rr);
+    c.arcTo(x+w, y+h, x, y+h, rr);
+    c.arcTo(x, y+h, x, y, rr);
+    c.arcTo(x, y, x+w, y, rr);
     c.closePath();
     if (fill) c.fill();
     if (stroke) c.stroke();
   }
 
-  function isImportant(kind) {
-    return (kind === "cosa" || kind === "adj");
-  }
-
   let words = [];
   let spawnAcc = 0;
 
-  function chooseWordForSpawn() {
-    if (!poolByKind || !bagByKind) return null;
+  function isImportant(kind) {
+    // “objeto” y “tono” resaltan más (tienen más “sabor” narrativo)
+    return kind === "objeto" || kind === "tono";
+  }
 
+  function nextWordItem() {
     const need = expectedKind();
 
-    // 80% lo que toca; 20% “varía” entre cosa/adj/lugar para que no sea monótono.
-    const r = Math.random();
-    let kind = need;
-
-    if (r >= 0.80) {
-      const alt = ["cosa", "adj", "lugar", "verbo", "sujeto"];
-      kind = alt[Math.floor(Math.random() * alt.length)];
-    }
-
-    // siempre preferimos que exista
-    if (!poolByKind[kind] || poolByKind[kind].length === 0) kind = need;
-
-    const item = takeFromBag(kind) || takeFromBag(need);
-    return item;
+    // 75%: la que toca (para coherencia)
+    // 25%: otra al azar (para sorpresa)
+    const kind = (Math.random() < 0.75) ? need : pick(["sujeto","verbo","objeto","lugar","tono"]);
+    const text = takeFromBag(kind);
+    if (!text) return null;
+    return { text, kind, important: isImportant(kind) };
   }
 
   function spawnWord() {
-    const item = chooseWordForSpawn();
+    const item = nextWordItem();
     if (!item) return;
-
-    const text = item.t;
-    const kind = item.kind;
 
     ctx.font = "900 18px system-ui";
     const padX = 14;
-    const w = ctx.measureText(text).width + padX * 2;
-    const h = 36;
+    const w = ctx.measureText(item.text).width + padX * 2;
+    const h = 38;
 
     const x = rand(20, W - w - 20);
     const y = -h - rand(10, 80);
 
     words.push({
-      text,
-      kind,
-      important: isImportant(kind),
+      text: item.text,
+      kind: item.kind,
+      important: item.important,
       x, y, w, h,
-      vy: rand(120, 210),
+      vy: rand(125, 220),
       wob: rand(0, Math.PI * 2),
     });
   }
 
   function drawWordBubble(b, ts) {
-    const wobX = Math.sin(ts / 420 + b.wob) * 3;
+    const wobX = Math.sin(ts/420 + b.wob) * 3;
+
+    const baseX = b.x + wobX;
 
     if (b.important) {
       ctx.save();
-      ctx.shadowColor = "rgba(251,191,36,.95)";
+      ctx.shadowColor = "rgba(255, 215, 90, .95)";
       ctx.shadowBlur = 18;
-      ctx.fillStyle = "rgba(255,255,255,.96)";
-      roundRect(ctx, b.x + wobX, b.y, b.w, b.h, 14, true, false);
+      ctx.fillStyle = "rgba(255,255,255,.97)";
+      roundRect(ctx, baseX, b.y, b.w, b.h, 16, true, false);
       ctx.restore();
 
-      ctx.strokeStyle = "rgba(251,191,36,.60)";
-      ctx.lineWidth = 2;
-      roundRect(ctx, b.x + wobX, b.y, b.w, b.h, 14, false, true);
+      ctx.strokeStyle = "rgba(255, 170, 60, .85)";
+      ctx.lineWidth = 2.2;
+      roundRect(ctx, baseX, b.y, b.w, b.h, 16, false, true);
     } else {
-      ctx.globalAlpha = 0.95;
       ctx.fillStyle = "rgba(255,255,255,.92)";
-      roundRect(ctx, b.x + wobX, b.y, b.w, b.h, 14, true, false);
-      ctx.globalAlpha = 1;
-
+      roundRect(ctx, baseX, b.y, b.w, b.h, 16, true, false);
       ctx.strokeStyle = "rgba(0,0,0,.08)";
       ctx.lineWidth = 1;
-      roundRect(ctx, b.x + wobX, b.y, b.w, b.h, 14, false, true);
+      roundRect(ctx, baseX, b.y, b.w, b.h, 16, false, true);
     }
 
     // etiqueta
-    ctx.globalAlpha = 0.70;
-    ctx.fillStyle = "rgba(124,58,237,.70)";
+    ctx.globalAlpha = 0.85;
+    ctx.fillStyle = "rgba(124,58,237,.85)";
     ctx.font = "900 11px system-ui";
     ctx.textAlign = "left";
     ctx.textBaseline = "bottom";
-    ctx.fillText((TEMPLATE_LABEL[b.kind] || "").toUpperCase(), b.x + wobX + 12, b.y - 4);
+    ctx.fillText(LABEL[b.kind].toUpperCase(), baseX + 12, b.y - 4);
     ctx.globalAlpha = 1;
 
     // texto
-    ctx.fillStyle = "rgba(31,36,48,.92)";
+    ctx.fillStyle = "rgba(31,36,48,.95)";
     ctx.font = "900 18px system-ui";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.fillText(b.text, b.x + wobX + 14, b.y + b.h / 2);
+    ctx.fillText(b.text, baseX + 14, b.y + b.h/2);
   }
 
   function collideCircleRect(cx, cy, cr, rx, ry, rw, rh) {
@@ -764,68 +779,72 @@
     const closestY = clamp(cy, ry, ry + rh);
     const dx = cx - closestX;
     const dy = cy - closestY;
-    return (dx * dx + dy * dy) <= (cr * cr);
+    return (dx*dx + dy*dy) <= (cr*cr);
   }
 
   // =========================
-  // Background
+  // Background (más vistoso)
   // =========================
   function drawBackground(ts) {
-    ctx.clearRect(0, 0, W, H);
+    ctx.clearRect(0,0,W,H);
 
-    const g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, "rgba(234,246,255,1)");
-    g.addColorStop(1, "rgba(255,255,255,1)");
+    const g = ctx.createLinearGradient(0, 0, W, H);
+    g.addColorStop(0, "rgba(255, 230, 250, 1)");
+    g.addColorStop(0.35, "rgba(210, 245, 255, 1)");
+    g.addColorStop(0.7, "rgba(255, 250, 210, 1)");
+    g.addColorStop(1, "rgba(230, 255, 220, 1)");
     ctx.fillStyle = g;
-    ctx.fillRect(0, 0, W, H);
+    ctx.fillRect(0,0,W,H);
+
+    // capas “bosque”
+    ctx.fillStyle = "rgba(124,58,237,.12)";
+    ctx.beginPath();
+    ctx.moveTo(0, H);
+    ctx.lineTo(0, H - 120);
+    for (let x=0; x<=W; x+=18){
+      const y = H - 120 + Math.sin((x/115) + ts/900) * 10;
+      ctx.lineTo(x,y);
+    }
+    ctx.lineTo(W, H);
+    ctx.closePath();
+    ctx.fill();
 
     ctx.fillStyle = "rgba(6,182,212,.10)";
     ctx.beginPath();
     ctx.moveTo(0, H);
-    ctx.lineTo(0, H - 120);
-    for (let x = 0; x <= W; x += 18) {
-      const y = H - 120 + Math.sin((x / 115) + ts / 900) * 10;
-      ctx.lineTo(x, y);
-    }
-    ctx.lineTo(W, H);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = "rgba(124,58,237,.10)";
-    ctx.beginPath();
-    ctx.moveTo(0, H);
     ctx.lineTo(0, H - 80);
-    for (let x = 0; x <= W; x += 18) {
-      const y = H - 80 + Math.sin((x / 95) + ts / 820 + 1.4) * 8;
-      ctx.lineTo(x, y);
+    for (let x=0; x<=W; x+=18){
+      const y = H - 80 + Math.sin((x/95) + ts/820 + 1.4) * 8;
+      ctx.lineTo(x,y);
     }
     ctx.lineTo(W, H);
     ctx.closePath();
     ctx.fill();
 
-    for (let i = 0; i < 14; i++) {
+    // partículas
+    for (let i=0;i<18;i++){
       const x = (i * 71 + 30) % W;
       const y = ((i * 97) % 210) + 25;
-      ctx.globalAlpha = 0.18;
+      ctx.globalAlpha = 0.22;
       ctx.fillStyle = "#111827";
       ctx.beginPath();
-      ctx.arc(x + Math.sin(ts / 700 + i) * 5, y + Math.cos(ts / 800 + i) * 3, 1.5, 0, Math.PI * 2);
+      ctx.arc(x + Math.sin(ts/700+i)*5, y + Math.cos(ts/800+i)*3, 1.6, 0, Math.PI*2);
       ctx.fill();
     }
     ctx.globalAlpha = 1;
 
+    // UI superior (buscá ahora)
     ctx.fillStyle = "rgba(17,24,39,.70)";
     ctx.font = "900 13px system-ui";
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
-    ctx.fillText(`Buscá ahora: ${TEMPLATE_LABEL[expectedKind()]}`, 16, 14);
+    ctx.fillText(`Buscá ahora: ${LABEL[expectedKind()]}`, 16, 14);
   }
 
   // =========================
   // Game state
   // =========================
   let running = false;
-  let rafId = null;
   let lastTs = 0;
 
   const GAME_SECONDS = 30;
@@ -851,17 +870,22 @@
     player.dragging = false;
 
     timeLeft = GAME_SECONDS;
+
+    // plantilla inicial
+    TEMPLATE = pickTemplate(selectedCharId);
+    templateIndex = 0;
+
     setHUD();
 
-    endOverlay.hidden = true;
+    if (endOverlay) endOverlay.hidden = true;
   }
 
   function endGame() {
     running = false;
     stopMusic();
-    endStory.textContent = (sentences.join(" ") || "").trim() || "Todavía no atrapaste palabras.";
-    endOverlay.hidden = false;
+    if (endOverlay) endOverlay.hidden = false;
     setHUD();
+    refreshStoryText();
   }
 
   function update(dt) {
@@ -876,42 +900,31 @@
     setHUD();
     updatePlayer(dt);
 
-    // Spawn: más vivo (y evita pantallas vacías)
     spawnAcc += dt;
-    const target = 14;
-    const spawnEvery = (words.length < 6) ? 0.34 : (words.length < 10 ? 0.44 : 0.58);
 
-    if (spawnAcc >= spawnEvery) {
+    // spawneo más “rico”:
+    // - genera más al inicio
+    // - mantiene un piso de palabras en pantalla
+    const desired = 12;
+    if (words.length < desired && spawnAcc > 0.18) {
       spawnAcc = 0;
-      if (words.length < target) spawnWord();
+      spawnWord();
+      if (Math.random() < 0.35) spawnWord(); // a veces doble para variedad
+    } else if (spawnAcc > 0.45) {
+      spawnAcc = 0;
+      if (words.length < 16) spawnWord();
     }
 
     for (const w of words) w.y += w.vy * dt;
 
     words = words.filter(w => {
-      if (w.y > H + 50) return false;
-
+      if (w.y > H + 60) return false;
       const hit = collideCircleRect(player.x, player.y, player.r, w.x, w.y, w.w, w.h);
       if (hit) {
-        // sólo acepta la palabra si coincide con el slot actual
-        const need = expectedKind();
-        if (w.kind === need) {
-          setSlot(need, w.text);
-          slotIndex = Math.min(TEMPLATE.length - 1, slotIndex + 1);
-          caughtCount += 1;
-
-          pushSentenceIfComplete();
-          rememberGlobal(w.text);
-
-          playWordSfx();
-          jump();
-          refreshStoryText();
-          return false;
-        } else {
-          // si no coincide, no la “consume”: rebote suave (para que no sea frustrante)
-          w.y += 18;
-          return true;
-        }
+        addWordToStory(w.text);
+        playWordSfx();
+        jump();
+        return false;
       }
       return true;
     });
@@ -924,26 +937,13 @@
   }
 
   function loop(ts) {
-    // protección: un solo loop activo
-    rafId = requestAnimationFrame(loop);
-
     const dt = lastTs ? (ts - lastTs) / 1000 : 0;
     lastTs = ts;
 
-    if (!gameWrap.hidden) {
-      if (running) update(dt);
-      render(ts);
-    }
-  }
+    if (running) update(dt);
+    render(ts);
 
-  function ensureLoopRunning() {
-    if (rafId != null) return;
-    rafId = requestAnimationFrame(loop);
-  }
-
-  function stopLoop() {
-    if (rafId != null) cancelAnimationFrame(rafId);
-    rafId = null;
+    if (!gameWrap?.hidden) requestAnimationFrame(loop);
   }
 
   // =========================
@@ -953,62 +953,59 @@
     playerName = (playerNameInput?.value || "").trim().slice(0, 18);
     selectedCharMeta = characters.find(c => c.id === selectedCharId);
 
-    buildPoolsForChar(selectedCharId);
+    if (!selectedCharMeta || !playerName) {
+      validateStart();
+      return;
+    }
 
-    promptLine.textContent = WORDBANK[selectedCharId].prompt;
-    resetSlots();
-    sentences = [];
-    caughtCount = 0;
+    // prompt + bolsas
+    if (promptLine) promptLine.textContent = WORDBANK[selectedCharId].prompt;
 
-    templateLine.textContent = templateText();
-    refreshStoryText();
+    rebuildBags(selectedCharId);
 
     resetGameState();
 
-    // spawn inicial: variado y suficiente
-    for (let i = 0; i < 10; i++) spawnWord();
+    // spawn inicial generoso
+    for (let i=0;i<12;i++) spawnWord();
+
+    if (templateLine) templateLine.textContent = templateText();
 
     menu.hidden = true;
     gameWrap.hidden = false;
-
     running = true;
+
     playMusic();
-    ensureLoopRunning();
+    requestAnimationFrame(loop);
   }
 
   function backToMenu() {
     running = false;
     stopMusic();
-    endOverlay.hidden = true;
-
     gameWrap.hidden = true;
     menu.hidden = false;
+    if (endOverlay) endOverlay.hidden = true;
 
-    playerNameHud.textContent = "—";
-    charHud.textContent = "—";
-    countHud.textContent = "0";
-    timeHud.textContent = String(GAME_SECONDS);
-
-    // opcional: detener loop si querés (pero no hace falta). Yo lo detengo para evitar dobles renders.
-    stopLoop();
-    lastTs = 0;
+    if (playerNameHud) playerNameHud.textContent = "—";
+    if (charHud) charHud.textContent = "—";
+    if (countHud) countHud.textContent = "0";
+    if (timeHud) timeHud.textContent = String(GAME_SECONDS);
   }
 
   function playAgain() {
     resetGameState();
+    for (let i=0;i<12;i++) spawnWord();
     running = true;
     playMusic();
-    ensureLoopRunning();
   }
 
   // =========================
-  // UI bindings
+  // UI
   // =========================
   startBtn?.addEventListener("click", startGame);
   backBtn?.addEventListener("click", backToMenu);
 
-  howBtn?.addEventListener("click", () => helpDialog.showModal());
-  closeHelp?.addEventListener("click", () => helpDialog.close());
+  howBtn?.addEventListener("click", () => helpDialog?.showModal());
+  closeHelp?.addEventListener("click", () => helpDialog?.close());
 
   undoBtn?.addEventListener("click", undoWord);
   clearBtn?.addEventListener("click", clearStory);
@@ -1035,14 +1032,10 @@
   renderCharacterGrid();
   validateStart();
   syncMuteUi();
-
-  resetSlots();
-  sentences = [];
-  caughtCount = 0;
-  if (timeHud) timeHud.textContent = String(GAME_SECONDS);
-  if (templateLine) templateLine.textContent = templateText();
   refreshStoryText();
+  if (timeHud) timeHud.textContent = String(GAME_SECONDS);
 
   menu.hidden = false;
   gameWrap.hidden = true;
+  if (endOverlay) endOverlay.hidden = true;
 })();
