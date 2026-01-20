@@ -17,6 +17,7 @@
         <div>Jugador: <strong id="playerNameHud">—</strong></div>
         <div>Personaje: <strong id="charHud">—</strong></div>
         <div>Palabras: <strong id="countHud">0</strong></div>
+        <div>Combo: <strong id="comboHud">—</strong></div>
         <div>Tiempo: <strong id="timeHud">30</strong>s</div>
       </div>
     </header>
@@ -24,7 +25,7 @@
     <!-- MENU -->
     <section class="card" id="menu">
       <h1 class="title">Elegí tu nuveciela</h1>
-      <p class="subtitle">PC: flechas ← →. Móvil: arrastrá al personaje con el dedo.</p>
+      <p class="subtitle">Regla: <strong>Armá tu historia en 30 segundos</strong>. PC: flechas ← →. Móvil: arrastrá al personaje.</p>
 
       <div class="grid" id="charGrid"></div>
 
@@ -40,7 +41,11 @@
       </div>
 
       <div class="note" id="menuNote">Elegí un personaje y escribí tu nombre.</div>
-      <div class="note small">Archivos: portada.png, fondo.mp3, word.mp3, nuveciela.png, ciela.png, lunaria.png, nuve.png</div>
+      <div class="note small">
+        Archivos: portada.png, fondo.mp3, word.mp3, nuveciela.png, ciela.png, lunaria.png, nuve.png
+        <br>
+        (Opcional: bosque.png para el final)
+      </div>
     </section>
 
     <!-- GAME -->
@@ -52,7 +57,9 @@
           <div>
             <div class="story-title">Tu cuento</div>
             <div class="story-sub" id="promptLine">Atrapá palabras para armar frases.</div>
-            <div class="story-sub"><strong>Plantilla:</strong> <span id="templateLine">—</span></div>
+            <div class="story-sub">
+              <strong>Plantilla:</strong> <span id="templateLine">—</span>
+            </div>
           </div>
           <div class="story-actions">
             <button id="undoBtn" class="ghost">Deshacer</button>
@@ -88,10 +95,10 @@
       <h2>Cómo se juega</h2>
       <ul>
         <li>Elegí personaje y escribí tu nombre.</li>
-        <li>Movete para atrapar palabras y armar frases con plantilla.</li>
-        <li>PC: flechas ← →. Móvil: arrastrá al personaje con el dedo.</li>
-        <li>Algunas palabras “importantes” brillan.</li>
-        <li>El juego dura 30 segundos.</li>
+        <li>Tu objetivo es armar un cuento en <strong>30 segundos</strong>.</li>
+        <li>El juego te dice qué tipo de palabra buscar (Sujeto/Verbo/Objeto/Lugar/Adjetivo).</li>
+        <li><strong>Correcta:</strong> suma y sube combo. <strong>Incorrecta:</strong> -2 segundos y te ralentiza un toque.</li>
+        <li><strong>Brillantes:</strong> dan bonus de tiempo/puntos. <strong>Espinas:</strong> obstáculo. <strong>Luciérnaga:</strong> +tiempo.</li>
       </ul>
       <button id="closeHelp" class="primary">Ok</button>
     </dialog>
