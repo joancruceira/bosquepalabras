@@ -7,6 +7,12 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <!-- Canvas de confeti (para frase completa y fin de juego) -->
+  <canvas id="confettiCanvas"></canvas>
+
+  <!-- Toast de récord -->
+  <div class="record-toast" id="recordToast">🏆 ¡Nuevo récord!</div>
+
   <main class="wrap">
     <header class="topbar">
       <div class="brand">
@@ -16,39 +22,41 @@
       <div class="hud">
         <div>Jugador: <strong id="playerNameHud">—</strong></div>
         <div>Personaje: <strong id="charHud">—</strong></div>
-        <div>Palabras: <strong id="countHud">0</strong></div>
-        <div>Combo: <strong id="comboHud">—</strong></div>
+        <div>Palabras: <span class="score-badge">⭐ <strong id="countHud">0</strong></span></div>
+        <div>Racha: <span class="streak-badge" id="streakBadge">🔥 <strong id="streakHud">0</strong></span></div>
+        <div>Puntos: <span class="score-badge">✨ <strong id="scoreHud">0</strong></span></div>
         <div>Tiempo: <strong id="timeHud">30</strong>s</div>
+        <div>Récord: <strong id="recordHud">—</strong></div>
+      </div>
+
+      <!-- Barra de tiempo -->
+      <div class="time-bar-wrap" id="timeBarWrap">
+        <div class="time-bar" id="timeBar"></div>
       </div>
     </header>
 
-    <!-- MENU -->
+    <!-- ===== MENU ===== -->
     <section class="card" id="menu">
       <h1 class="title">Elegí tu nuveciela</h1>
-      <p class="subtitle">Regla: <strong>Armá tu historia en 30 segundos</strong>. PC: flechas ← →. Móvil: arrastrá al personaje.</p>
+      <p class="subtitle">PC: flechas ← →. Móvil: tocá el canvas para mover tu personaje.</p>
 
       <div class="grid" id="charGrid"></div>
 
       <div class="row">
         <label class="label" for="playerName">Tu nombre:</label>
-        <input id="playerName" class="input" placeholder="Tu nombre" maxlength="18" />
+        <input id="playerName" class="input" placeholder="¿Cómo te llamás?" maxlength="18" autocomplete="off" />
       </div>
 
       <div class="row">
-        <button id="startBtn" class="primary" disabled>Empezar</button>
+        <button id="startBtn" class="primary" disabled>¡Empezar!</button>
         <button id="muteBtn" class="ghost" aria-pressed="false">Sonido: ON</button>
         <button id="howBtn" class="ghost">Cómo se juega</button>
       </div>
 
       <div class="note" id="menuNote">Elegí un personaje y escribí tu nombre.</div>
-      <div class="note small">
-        Archivos: portada.png, fondo.mp3, word.mp3, nuveciela.png, ciela.png, lunaria.png, nuve.png
-        <br>
-        (Opcional: bosque.png para el final)
-      </div>
     </section>
 
-    <!-- GAME -->
+    <!-- ===== GAME ===== -->
     <section class="card game" id="gameWrap" hidden>
       <canvas id="canvas" width="900" height="520"></canvas>
 
@@ -57,56 +65,78 @@
           <div>
             <div class="story-title">Tu cuento</div>
             <div class="story-sub" id="promptLine">Atrapá palabras para armar frases.</div>
-            <div class="story-sub">
-              <strong>Plantilla:</strong> <span id="templateLine">—</span>
-            </div>
+            <div class="story-sub"><strong>Buscás ahora:</strong> <span id="templateLine">—</span></div>
           </div>
           <div class="story-actions">
-            <button id="undoBtn" class="ghost">Deshacer</button>
-            <button id="clearBtn" class="ghost">Limpiar</button>
-            <button id="copyBtn" class="primary">Copiar</button>
-            <button id="pdfBtn" class="ghost">PDF</button>
+            <button id="undoBtn" class="ghost">↩ Deshacer</button>
+            <button id="clearBtn" class="ghost">🗑 Limpiar</button>
+            <button id="copyBtn" class="primary" disabled>Copiar</button>
+            <button id="pdfBtn" class="ghost" disabled>PDF</button>
           </div>
         </div>
-
         <div id="storyText" class="story-text" aria-live="polite"></div>
       </div>
 
       <div class="row">
-        <button id="backBtn" class="ghost">Volver al menú</button>
+        <button id="backBtn" class="ghost">← Volver al menú</button>
       </div>
 
-      <!-- FIN DEL JUEGO -->
-      <div id="endOverlay" class="end" hidden>
-        <div class="end-card">
-          <div class="end-title">Fin del juego</div>
-          <div class="end-sub">Tu historia quedó así:</div>
-          <div id="endStory" class="end-story"></div>
-          <div class="end-actions">
-            <button id="endCopyBtn" class="primary">Copiar</button>
-            <button id="endPdfBtn" class="ghost">Exportar PDF</button>
-            <button id="againBtn" class="ghost">Jugar otra vez</button>
-          </div>
-        </div>
-      </div>
     </section>
 
+    <!-- FIN DEL JUEGO — fuera del gameWrap para que position:fixed funcione bien -->
+    <div id="endOverlay" hidden>
+      <div class="end-card">
+        <div class="end-title" id="endTitle">¡Tiempo!</div>
+        <div class="end-sub" id="endSub">Tu historia quedó así:</div>
+
+        <div class="end-score">
+          <div class="end-score-item">
+            <div class="score-val" id="endScore">0</div>
+            <div class="score-lbl">Puntos</div>
+            <div class="end-record" id="endRecordBadge" style="display:none">🏆 ¡Nuevo récord!</div>
+          </div>
+          <div class="end-score-item">
+            <div class="score-val" id="endWords">0</div>
+            <div class="score-lbl">Palabras</div>
+          </div>
+          <div class="end-score-item">
+            <div class="score-val" id="endSentences">0</div>
+            <div class="score-lbl">Frases</div>
+          </div>
+          <div class="end-score-item">
+            <div class="score-val" id="endStreak">0</div>
+            <div class="score-lbl">Racha máx.</div>
+          </div>
+        </div>
+
+        <div id="endStory" class="end-story"></div>
+
+        <div class="end-actions">
+          <button id="endCopyBtn" class="primary">Copiar historia</button>
+          <button id="endPdfBtn" class="ghost">Exportar PDF</button>
+          <button id="againBtn" class="ghost">🔄 Jugar otra vez</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== HELP DIALOG ===== -->
     <dialog id="helpDialog" class="dialog">
       <h2>Cómo se juega</h2>
       <ul>
-        <li>Elegí personaje y escribí tu nombre.</li>
-        <li>Tu objetivo es armar un cuento en <strong>30 segundos</strong>.</li>
-        <li>El juego te dice qué tipo de palabra buscar (Sujeto/Verbo/Objeto/Lugar/Adjetivo).</li>
-        <li><strong>Correcta:</strong> suma y sube combo. <strong>Incorrecta:</strong> -2 segundos y te ralentiza un toque.</li>
-        <li><strong>Brillantes:</strong> dan bonus de tiempo/puntos. <strong>Espinas:</strong> obstáculo. <strong>Luciérnaga:</strong> +tiempo.</li>
+        <li><strong>Elegí</strong> un personaje y escribí tu nombre.</li>
+        <li><strong>Movete</strong> para atrapar palabras del tipo que indica la barra.</li>
+        <li><strong>PC:</strong> flechas ← →. <strong>Móvil:</strong> tocá cualquier punto del canvas.</li>
+        <li>Las palabras tienen <strong>colores según su tipo</strong> — aprendé a reconocerlos.</li>
+        <li>Atrapar palabras en racha da más <strong>puntos</strong>.</li>
+        <li>Cada <strong>frase completa</strong> suma tiempo extra. ¡No te detengas!</li>
+        <li>El juego termina cuando llega a <strong>cero</strong>. Exportá tu cuento al final.</li>
       </ul>
-      <button id="closeHelp" class="primary">Ok</button>
+      <button id="closeHelp" class="primary">¡Entendido!</button>
     </dialog>
 
-    <footer class="footer">Hecho con HTML/CSS/JS — Nuvecielas</footer>
+    <footer class="footer">Hecho con HTML/CSS/JS — Nuvecielas · Bosque de las Palabras</footer>
   </main>
 
-  <!-- jsPDF (CDN) -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="game.js"></script>
 </body>
